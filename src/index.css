@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 45% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 45% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 45% 12%;
+
+    /* ACSE brand red */
+    --primary: 1 76% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 210 45% 14%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 197 70% 95%;
+    --accent-foreground: 205 55% 20%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    /* ACSE brand cyan */
+    --ring: 198 69% 51%;
+
+    --radius: 0.65rem;
+  }
+
+  .dark {
+    --background: 209 54% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 210 45% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 210 45% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 1 76% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 210 40% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 205 45% 20%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 35% 22%;
+    --input: 210 35% 22%;
+    --ring: 198 69% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  /* Offset in-page anchor targets for the sticky nav */
+  section[id] {
+    scroll-margin-top: 88px;
+  }
+}
+
+@layer utilities {
+  .brand-gradient-hero {
+    background-color: #0a1e35;
+    background-image:
+      radial-gradient(circle at 72% 45%, rgba(44, 165, 217, 0.16) 0%, transparent 55%),
+      radial-gradient(circle at 15% 85%, rgba(227, 57, 53, 0.1) 0%, transparent 50%);
+  }
+  .brand-dot-grid {
+    background-image: radial-gradient(circle, rgba(44, 165, 217, 0.18) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Thin scrollbars inside chat/panels */
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
