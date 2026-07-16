@@ -6,9 +6,9 @@ type Tone = "light" | "dark"
 
 /** The three chatbot design approaches, one per route. */
 export const VARIANTS = [
-  { to: "/", label: "Classic", hint: "Messenger" },
-  { to: "/v1", label: "Copilot", hint: "Immersive" },
-  { to: "/v2", label: "Concierge", hint: "Voice" },
+  { to: "/", label: "v1", hint: "Messenger" },
+  { to: "/v1", label: "v2", hint: "Immersive" },
+  { to: "/v2", label: "v3", hint: "Voice" },
 ] as const
 
 /**
