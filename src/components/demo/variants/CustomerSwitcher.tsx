@@ -3,8 +3,9 @@ import { Check, ChevronsUpDown, User } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { customers, findCustomer } from "@/data/customers"
+import { useAccessGate } from "@/components/demo/useAccessGate"
 import { setChatContext } from "@/store/demoSlice"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { useAppSelector } from "@/store/hooks"
 
 type Tone = "light" | "dark"
 
@@ -15,7 +16,9 @@ type Tone = "light" | "dark"
  * cleanly against both the dark Copilot page and the light Concierge page.
  */
 export function CustomerSwitcher({ tone = "light" }: { tone?: Tone }) {
-  const dispatch = useAppDispatch()
+  // Swapping to another customer is a fresh pick, so it goes through the same
+  // identity gate the list does rather than switching context behind it.
+  const { pick } = useAccessGate(setChatContext)
   const { selectedCustomerId, selectedAccountId } = useAppSelector((s) => s.demo)
   const customer = findCustomer(selectedCustomerId)
   const [open, setOpen] = useState(false)
@@ -91,7 +94,7 @@ export function CustomerSwitcher({ tone = "light" }: { tone?: Tone }) {
                     role="option"
                     aria-selected={active}
                     onClick={() => {
-                      dispatch(setChatContext({ customerId: c.id, accountId: a.id }))
+                      pick(c.id, a.id)
                       setOpen(false)
                     }}
                     className={cn(

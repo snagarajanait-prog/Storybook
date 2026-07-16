@@ -37,7 +37,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" onClick={() => dispatch(openDemo())} className="gap-2">
               <Bot className="h-5 w-5" />
-              Try the interactive demo
+              Try the assistant
             </Button>
             <Button
               size="lg"
@@ -72,7 +72,7 @@ export function Hero() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-brand-navy">ACSE Assistant</p>
-                  <p className="text-[11px] text-emerald-600">● Online · demo data</p>
+                  <p className="text-[11px] text-emerald-600">● Online</p>
                 </div>
               </div>
               <div className="space-y-3 py-4">

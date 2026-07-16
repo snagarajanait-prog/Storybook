@@ -21,7 +21,7 @@ const groups = [
   {
     title: "Try it",
     links: [
-      { label: "Interactive demo", href: "#ai-demo" },
+      { label: "Interactive assistant", href: "#ai-demo" },
       { label: "Use cases", href: "#use-cases" },
     ],
   },
@@ -59,7 +59,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center">
-          <p>© 2026 ACSE Solutions · Demo build — all data is synthetic.</p>
+          <p>© 2026 ACSE Solutions · Product preview — all data shown is non-production.</p>
           <p>Runs on Oracle Cloud Infrastructure</p>
         </div>
       </div>

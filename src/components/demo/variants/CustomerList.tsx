@@ -3,8 +3,8 @@ import { ChevronRight, Search, User } from "lucide-react"
 
 import { cn, formatCurrency } from "@/lib/utils"
 import { customers } from "@/data/customers"
+import { useAccessGate } from "@/components/demo/useAccessGate"
 import { setChatContext } from "@/store/demoSlice"
-import { useAppDispatch } from "@/store/hooks"
 
 type Tone = "light" | "dark"
 
@@ -15,7 +15,7 @@ type Tone = "light" | "dark"
  * page.
  */
 export function CustomerList({ tone = "light" }: { tone?: Tone }) {
-  const dispatch = useAppDispatch()
+  const { pick } = useAccessGate(setChatContext)
   const [query, setQuery] = useState("")
   const dark = tone === "dark"
 
@@ -37,8 +37,8 @@ export function CustomerList({ tone = "light" }: { tone?: Tone }) {
           Select a customer
         </h2>
         <p className={cn("mt-1 text-sm", dark ? "text-slate-400" : "text-slate-600")}>
-          Pick an account to set the assistant's context. All customers are synthetic — several
-          have multiple accounts.
+          Pick an account to set the assistant's context. These are non-production customer
+          records — several have multiple accounts.
         </p>
         <div className="relative mt-4">
           <Search
@@ -107,7 +107,7 @@ export function CustomerList({ tone = "light" }: { tone?: Tone }) {
               {c.accounts.map((a) => (
                 <button
                   key={a.id}
-                  onClick={() => dispatch(setChatContext({ customerId: c.id, accountId: a.id }))}
+                  onClick={() => pick(c.id, a.id)}
                   className={cn(
                     "group flex w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-cyan",
                     dark ? "hover:bg-white/[0.05]" : "hover:bg-brand-cyan/5"

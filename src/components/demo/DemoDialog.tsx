@@ -10,17 +10,21 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CustomerSelect } from "@/components/demo/CustomerSelect"
+import { AccountVerify } from "@/components/demo/AccountVerify"
 import { AccountDashboard } from "@/components/demo/AccountDashboard"
 import { ChatWindow } from "@/components/demo/ChatWindow"
 import { findCustomer } from "@/data/customers"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { backToCustomerList, closeDemo } from "@/store/demoSlice"
+import { backToCustomerList, closeDemo, selectCustomer } from "@/store/demoSlice"
 
 export function DemoDialog() {
   const dispatch = useAppDispatch()
-  const { open, stage, selectedCustomerId } = useAppSelector((s) => s.demo)
+  const { open, stage, selectedCustomerId, pendingAccountId } = useAppSelector((s) => s.demo)
   const customer = findCustomer(selectedCustomerId)
   const [mobileTab, setMobileTab] = useState<"account" | "chat">("chat")
+  // An account is picked but held at the identity gate — the list gives way to
+  // the verification steps until it clears.
+  const verifying = Boolean(pendingAccountId)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && dispatch(closeDemo())}>
@@ -54,10 +58,12 @@ export function DemoDialog() {
           ) : (
             <div className="pl-1">
               <DialogTitle className="text-base text-brand-navy">
-                ACSE AI · Interactive demo
+                ACSE AI · Interactive assistant
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Select a customer to begin. No login required.
+                {verifying
+                  ? "Confirm your identity to open the assistant."
+                  : "Select a customer to begin. No login required."}
               </DialogDescription>
             </div>
           )}
@@ -83,7 +89,7 @@ export function DemoDialog() {
         {stage === "select" ? (
           <div className="min-h-0 flex-1">
             {/* a11y: workspace title is set above; select uses the header title */}
-            <CustomerSelect />
+            {verifying ? <AccountVerify tone="light" grant={selectCustomer} /> : <CustomerSelect />}
           </div>
         ) : (
           <>

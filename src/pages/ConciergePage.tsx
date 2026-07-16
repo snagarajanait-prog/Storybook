@@ -26,13 +26,15 @@ import {
   type OtpPrompt,
 } from "@/components/demo/useChatEngine"
 import { Logo } from "@/components/layout/Logo"
+import { AccountVerify } from "@/components/demo/AccountVerify"
+import { VerifiedChip } from "@/components/demo/VerifiedChip"
 import { AccountPanel } from "@/components/demo/variants/AccountPanel"
 import { CustomerList } from "@/components/demo/variants/CustomerList"
 import { SlideOver } from "@/components/demo/variants/SlideOver"
 import { VariantSwitcher } from "@/components/demo/variants/VariantSwitcher"
 import { DataSourceToggle } from "@/components/demo/DataSourceToggle"
-import { clearChatContext } from "@/store/demoSlice"
-import { useAppDispatch } from "@/store/hooks"
+import { clearChatContext, setChatContext } from "@/store/demoSlice"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
 const IVORY = "#f7f4ee"
 
@@ -52,6 +54,9 @@ export default function ConciergePage() {
     engine
   const [panelOpen, setPanelOpen] = useState(false)
   const closePanel = useCallback(() => setPanelOpen(false), [])
+  // An account picked but held at the identity gate. It outranks the list *and*
+  // any standing context, so a fresh pick can never slip in behind the gate.
+  const verifying = useAppSelector((s) => Boolean(s.demo.pendingAccountId))
 
   // At lg+ the panel is persistent, so make sure the slide-over never lingers
   // open across a resize (which would duplicate it behind a full-page scrim).
@@ -63,7 +68,7 @@ export default function ConciergePage() {
     return () => mq.removeEventListener("change", sync)
   }, [closePanel])
 
-  const hasContext = Boolean(customer && account)
+  const hasContext = Boolean(customer && account) && !verifying
   const lastStep = messages[messages.length - 1]?.step
   const lastIsDone = lastStep?.kind === "done" && !playing
   const callIdle = messages.length <= 1 && !playing && !thinking && !typing
@@ -140,6 +145,7 @@ export default function ConciergePage() {
               <span className="hidden max-w-[9rem] truncate sm:inline">{customer.name}</span>
             </button>
           )}
+          <VerifiedChip tone="light" className="hidden lg:inline-flex" />
           <div className="hidden md:block">
             <VariantSwitcher tone="light" />
           </div>
@@ -158,7 +164,11 @@ export default function ConciergePage() {
 
       {!hasContext ? (
         <div className="relative z-10 min-h-0 flex-1 overflow-hidden">
-          <CustomerList tone="light" />
+          {verifying ? (
+            <AccountVerify tone="ivory" grant={setChatContext} />
+          ) : (
+            <CustomerList tone="light" />
+          )}
         </div>
       ) : (
         <div className="relative z-10 flex min-h-0 flex-1">
@@ -612,7 +622,7 @@ function Dock({ engine }: { engine: ReturnType<typeof useChatEngine> }) {
         )}
       </div>
       <p className="mt-1.5 text-center text-[10px] text-slate-500">
-        Simulated demo · synthetic data · tap a suggestion or type to talk to the concierge
+        Illustrative conversation · non-production data · tap a suggestion or type to talk to the concierge
       </p>
     </div>
   )

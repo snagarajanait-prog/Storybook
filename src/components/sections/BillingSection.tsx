@@ -87,7 +87,7 @@ export function BillingSection() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button size="lg" onClick={() => dispatch(openDemo())}>
-              Request a demo
+              See it in action
             </Button>
             <Button
               size="lg"

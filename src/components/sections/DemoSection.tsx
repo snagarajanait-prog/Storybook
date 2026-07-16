@@ -9,13 +9,13 @@ const steps = [
     n: 1,
     icon: ListChecks,
     title: "Select an account",
-    body: "Pick from a list of predefined demo customers — no login required.",
+    body: "Choose a customer account to work from — no login required.",
   },
   {
     n: 2,
     icon: ShieldCheck,
     title: "Verify",
-    body: "The assistant confirms identity by SMS or email, just like production.",
+    body: "The assistant confirms identity by SMS or email before it touches an account.",
   },
   {
     n: 3,
@@ -27,7 +27,7 @@ const steps = [
     n: 4,
     icon: Wand2,
     title: "AI resolves it",
-    body: "Watch the request run start to finish against demo data.",
+    body: "Watch the request run start to finish, step by step.",
   },
 ]
 
@@ -45,7 +45,7 @@ export function DemoSection() {
             Experience ACSE AI firsthand
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Pick a demo account, tell the AI what you need, and watch it resolve
+            Pick an account, tell the AI what you need, and watch it resolve
             the request end-to-end — exactly like your customers would.
           </p>
         </div>
@@ -71,10 +71,10 @@ export function DemoSection() {
         <div className="mt-10 flex flex-col items-center justify-center gap-3">
           <Button size="lg" onClick={() => dispatch(openDemo())} className="gap-2">
             <Bot className="h-5 w-5" />
-            Launch the interactive demo
+            Launch the assistant
           </Button>
           <p className="text-xs text-muted-foreground">
-            No sign-up · all data is synthetic · runs in your browser
+            No sign-up · non-production data · runs in your browser
           </p>
         </div>
       </div>

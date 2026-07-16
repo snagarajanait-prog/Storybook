@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { type ChatStep } from "@/data/scenarios"
 import { OtpInput } from "@/components/demo/OtpInput"
+import { VerifiedChip } from "@/components/demo/VerifiedChip"
 import {
   OTP_DIGITS,
   useChatEngine,
@@ -55,10 +56,13 @@ export function ChatWindow() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-white">ACSE Assistant</p>
-          <p className="flex items-center gap-1.5 text-[11px] text-white/60">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Online · context {account.id}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="flex items-center gap-1.5 text-[11px] text-white/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Online · context {account.id}
+            </p>
+            <VerifiedChip tone="dark" />
+          </div>
         </div>
         <Badge
           variant={source === "C2M" ? "destructive" : "brand"}
@@ -117,7 +121,7 @@ export function ChatWindow() {
           </Button>
         </div>
         <p className="mt-2 text-center text-[10px] text-muted-foreground">
-          Simulated demo · synthetic data · reads/writes {meta.chatLabel}
+          Illustrative conversation · non-production data · reads/writes {meta.chatLabel}
         </p>
       </div>
     </div>

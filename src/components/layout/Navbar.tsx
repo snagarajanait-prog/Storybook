@@ -54,7 +54,7 @@ export function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <Button onClick={() => dispatch(openDemo())} className="gap-2">
             <Sparkles className="h-4 w-4" />
-            Try the demo
+            Try the assistant
           </Button>
         </div>
 
@@ -90,7 +90,7 @@ export function Navbar() {
             className="mt-3 w-full gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            Try the demo
+            Try the assistant
           </Button>
         </div>
       )}

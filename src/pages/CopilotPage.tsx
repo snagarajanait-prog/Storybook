@@ -25,13 +25,15 @@ import {
   type OtpPrompt,
 } from "@/components/demo/useChatEngine"
 import { Logo } from "@/components/layout/Logo"
+import { AccountVerify } from "@/components/demo/AccountVerify"
+import { VerifiedChip } from "@/components/demo/VerifiedChip"
 import { AccountPanel } from "@/components/demo/variants/AccountPanel"
 import { CustomerList } from "@/components/demo/variants/CustomerList"
 import { SlideOver } from "@/components/demo/variants/SlideOver"
 import { VariantSwitcher } from "@/components/demo/variants/VariantSwitcher"
 import { DataSourceToggle } from "@/components/demo/DataSourceToggle"
-import { clearChatContext } from "@/store/demoSlice"
-import { useAppDispatch } from "@/store/hooks"
+import { clearChatContext, setChatContext } from "@/store/demoSlice"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
 /**
  * V1 · "Filament — The Reasoning Thread".
@@ -48,6 +50,9 @@ export default function CopilotPage() {
     engine
   const [panelOpen, setPanelOpen] = useState(false)
   const closePanel = useCallback(() => setPanelOpen(false), [])
+  // An account picked but held at the identity gate. It outranks the list *and*
+  // any standing context, so a fresh pick can never slip in behind the gate.
+  const verifying = useAppSelector((s) => Boolean(s.demo.pendingAccountId))
 
   // At lg+ the panel is persistent, so make sure the slide-over never lingers
   // open across a resize (which would duplicate it behind a full-page scrim).
@@ -59,7 +64,7 @@ export default function CopilotPage() {
     return () => mq.removeEventListener("change", sync)
   }, [closePanel])
 
-  const hasContext = Boolean(customer && account)
+  const hasContext = Boolean(customer && account) && !verifying
 
   // Hero state: only the seeded greeting exists and nothing is in flight. Treat
   // the transient empty frame as hero too, so cold entry never flashes an empty
@@ -99,6 +104,7 @@ export default function CopilotPage() {
               <span className="hidden max-w-[10rem] truncate sm:inline">{customer.name}</span>
               <span className="hidden font-mono text-white/50 sm:inline">· {account.id}</span>
             </button>
+            <VerifiedChip tone="dark" className="hidden lg:inline-flex" />
           </>
         )}
 
@@ -130,7 +136,11 @@ export default function CopilotPage() {
 
       {!hasContext ? (
         <div className="relative z-10 min-h-0 flex-1 overflow-hidden">
-          <CustomerList tone="dark" />
+          {verifying ? (
+            <AccountVerify tone="dark" grant={setChatContext} />
+          ) : (
+            <CustomerList tone="dark" />
+          )}
         </div>
       ) : (
         <div className="relative z-10 flex min-h-0 flex-1">
@@ -562,7 +572,7 @@ function Composer({ engine, mode }: { engine: ReturnType<typeof useChatEngine>; 
         </button>
       </div>
       <p className="mt-2 text-center text-[11px] text-slate-400">
-        Simulated demo · synthetic data · reads/writes {meta.chatLabel}
+        Illustrative conversation · non-production data · reads/writes {meta.chatLabel}
       </p>
     </div>
   )

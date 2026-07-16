@@ -69,10 +69,10 @@ export const DATA_SOURCE_META: Record<
     short: "ATP",
     system: "Autonomous Transaction Processing",
     description:
-      "Synthetic data. Safe for public demos — the real billing application is never touched.",
-    chatLabel: "the demo service system",
-    chatShort: "DEMO",
-    chatSystem: "Demo Service Platform",
+      "Isolated data store. Safe for customer-facing sessions — the billing application is never touched.",
+    chatLabel: "the ACSE service platform",
+    chatShort: "STANDARD",
+    chatSystem: "ACSE Service Platform",
     promptsForOtp: true,
   },
   C2M: {

@@ -14,7 +14,7 @@ export function DemoLauncher() {
     <button
       onClick={() => dispatch(openDemo())}
       className="group fixed bottom-5 right-5 z-40 flex items-center gap-2.5 rounded-full bg-brand-red py-3 pl-3 pr-5 text-white shadow-xl shadow-brand-red/30 transition-transform hover:scale-[1.03] active:scale-95"
-      aria-label="Open the AI assistant demo"
+      aria-label="Open the AI assistant"
     >
       <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20">
         <Bot className="h-5 w-5" />

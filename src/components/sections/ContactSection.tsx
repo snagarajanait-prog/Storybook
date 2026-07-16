@@ -20,7 +20,7 @@ const interests = [
   "Customer service automation",
   "Billing exception workflows",
   "Both — full platform",
-  "A demo / pricing",
+  "A walkthrough / pricing",
 ]
 
 export function ContactSection() {
@@ -42,8 +42,11 @@ export function ContactSection() {
         interest,
       })
     )
-    toast.success("Thanks — we'll be in touch.", {
-      description: "Your details were captured (demo — no email is actually sent).",
+    // Nothing is transmitted — the lead only lands in the store — so the copy
+    // confirms capture and points at the address listed above rather than
+    // promising a reply this page can't send.
+    toast.success("Thanks — your details were captured.", {
+      description: "For a direct reply, email us at info@acsesolutions.com.",
     })
     setFirstName("")
     setLastName("")

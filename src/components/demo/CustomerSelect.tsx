@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { customers } from "@/data/customers"
-import { useAppDispatch } from "@/store/hooks"
+import { useAccessGate } from "@/components/demo/useAccessGate"
 import { selectCustomer } from "@/store/demoSlice"
 
 const typeColor: Record<string, string> = {
@@ -16,7 +16,7 @@ const typeColor: Record<string, string> = {
 }
 
 export function CustomerSelect() {
-  const dispatch = useAppDispatch()
+  const { pick } = useAccessGate(selectCustomer)
   const [query, setQuery] = useState("")
 
   const filtered = useMemo(() => {
@@ -33,10 +33,10 @@ export function CustomerSelect() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b bg-white px-5 py-4">
-        <h3 className="text-lg font-semibold text-brand-navy">Select a demo customer</h3>
+        <h3 className="text-lg font-semibold text-brand-navy">Select a customer</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Pick an account to set the chatbot's context. All customers are
-          synthetic — several have multiple accounts.
+          Pick an account to set the assistant's context. These are
+          non-production customer records — several have multiple accounts.
         </p>
         <div className="relative mt-3">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -72,9 +72,7 @@ export function CustomerSelect() {
                 {c.accounts.map((a) => (
                   <button
                     key={a.id}
-                    onClick={() =>
-                      dispatch(selectCustomer({ customerId: c.id, accountId: a.id }))
-                    }
+                    onClick={() => pick(c.id, a.id)}
                     className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-brand-cyan/5"
                   >
                     <span

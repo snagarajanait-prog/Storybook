@@ -7,7 +7,7 @@
  *   {account}       account number (chatbot context)
  *   {address}       service address
  *   {email}         email on file
- *   {source}        neutral name of the active mode ("the demo service system")
+ *   {source}        neutral name of the active mode ("the ACSE service platform")
  *   {sourceSystem}  neutral platform name of the active mode
  *
  * The {source} tokens are what make the active mode visible in the conversation
@@ -90,7 +90,7 @@ const scenarios: Record<string, Scenario> = {
       { kind: "user", text: "I need to stop service — I'm moving out." },
       { kind: "ai", text: "I can take care of that, {name}. Let me verify account {account} before making changes." },
       { kind: "status", text: "Sending a verification code by email…" },
-      { kind: "otp", channel: "email", text: "Code sent to the email on file. (Demo: auto-verified)" },
+      { kind: "otp", channel: "email", text: "Code sent to the email on file. (Verified automatically)" },
       { kind: "ai", text: "Verified. What date should service end at {address}?" },
       { kind: "user", text: "This Friday, please." },
       { kind: "status", text: "Scheduling the stop and estimating the final bill via {source}…" },
@@ -112,7 +112,7 @@ const scenarios: Record<string, Scenario> = {
       { kind: "user", text: "I'm moving and want to transfer my service to a new home." },
       { kind: "ai", text: "Great — a transfer keeps everything on one account, {name}. Verifying account {account} first." },
       { kind: "status", text: "Sending a one-time code to the phone on file…" },
-      { kind: "otp", channel: "sms", text: "Code sent by SMS. (Demo: auto-verified)" },
+      { kind: "otp", channel: "sms", text: "Code sent by SMS. (Verified automatically)" },
       { kind: "ai", text: "You're verified. What's the new service address and move date?" },
       { kind: "user", text: "905 Birchwood Ln, San Jose — moving on the 1st." },
       { kind: "status", text: "Validating the new address is in our territory…" },
@@ -200,7 +200,7 @@ const scenarios: Record<string, Scenario> = {
       { kind: "user", text: "I need to update the phone number on my account." },
       { kind: "ai", text: "Sure, {name}. I just need to verify account {account} before changing contact details." },
       { kind: "status", text: "Sending a verification code by email…" },
-      { kind: "otp", channel: "email", text: "Code sent to the email on file. (Demo: auto-verified)" },
+      { kind: "otp", channel: "email", text: "Code sent to the email on file. (Verified automatically)" },
       { kind: "ai", text: "Verified. What's the new phone number?" },
       { kind: "user", text: "(408) 555-0207" },
       { kind: "status", text: "Updating contact details in {source}…" },

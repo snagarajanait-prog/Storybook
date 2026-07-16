@@ -117,7 +117,7 @@ export function UseCasesSection() {
               </p>
               {c.scenario && (
                 <span className="mt-3 text-sm font-medium text-brand-cyan opacity-0 transition-opacity group-hover:opacity-100">
-                  Play this in the demo →
+                  Run this scenario →
                 </span>
               )}
             </button>
@@ -126,7 +126,7 @@ export function UseCasesSection() {
 
         <div className="mt-10 text-center">
           <Button size="lg" onClick={() => launch()} className="gap-2">
-            Try any of these in the demo
+            Try any of these with the assistant
           </Button>
         </div>
       </div>
