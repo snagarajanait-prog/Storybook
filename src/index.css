@@ -85,6 +85,20 @@
   section[id] {
     scroll-margin-top: 88px;
   }
+
+  /* Respect reduced-motion globally: neutralise any animation/transition that
+     isn't already gated behind Tailwind's motion-safe: variant (covers infinite
+     spinners, pings and shimmers as well). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer utilities {

@@ -13,14 +13,22 @@ import { DATA_SOURCE_META, setDataSource } from "@/store/dataSourceSlice"
  * to end users — it's an internal team control to flip the AI between the live
  * C2M application and the synthetic Autonomous DB. Here it lives as a small,
  * clearly-labelled corner control so it's easy to demonstrate.
+ *
+ * `side` picks the free corner for the host page: the marketing page keeps the
+ * left (its demo launcher owns the right), while the variant pages anchor it
+ * right so it never covers their left-hand account panel.
  */
-export function DataSourceToggle() {
+export function DataSourceToggle({ side = "left" }: { side?: "left" | "right" }) {
   const dispatch = useAppDispatch()
   const source = useAppSelector((s) => s.dataSource.source)
-  const [collapsed, setCollapsed] = useState(false)
+  // Start collapsed to a small corner pill: it stays visible and one click away,
+  // but never covers page content (e.g. the account panel's usage chart).
+  const [collapsed, setCollapsed] = useState(true)
 
   const isC2M = source === "C2M"
   const meta = DATA_SOURCE_META[source]
+  // Both literals are present so Tailwind's JIT emits them.
+  const anchor = side === "right" ? "right-4" : "left-4"
 
   // Portal to <body> with an explicit high z-index so the control always sits
   // above the demo dialog's overlay. Radix's modal layer sets pointer-events:none
@@ -33,7 +41,10 @@ export function DataSourceToggle() {
         data-internal-toggle
         onClick={() => setCollapsed(false)}
         style={style}
-        className="fixed bottom-4 left-4 flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-3 py-2 text-xs font-medium text-slate-600 shadow-lg backdrop-blur transition-colors hover:bg-white"
+        className={cn(
+          "fixed bottom-4 flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-3 py-2 text-xs font-medium text-slate-600 shadow-lg backdrop-blur transition-colors hover:bg-white",
+          anchor
+        )}
       >
         <Lock className="h-3.5 w-3.5" />
         Internal
@@ -49,7 +60,10 @@ export function DataSourceToggle() {
     <div
       data-internal-toggle
       style={style}
-      className="fixed bottom-4 left-4 w-[290px] rounded-xl border border-slate-300 bg-white/95 p-3.5 shadow-xl backdrop-blur"
+      className={cn(
+        "fixed bottom-4 w-[290px] rounded-xl border border-slate-300 bg-white/95 p-3.5 shadow-xl backdrop-blur",
+        anchor
+      )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">

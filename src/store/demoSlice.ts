@@ -55,6 +55,28 @@ const demoSlice = createSlice({
       state.selectedAccountId = action.payload
       state.activeScenarioId = null
     },
+    /**
+     * Set the chatbot context (customer + account) WITHOUT touching `stage` or
+     * `open`. Used by the standalone variant pages (/v1, /v2) so switching the
+     * customer there never disturbs the base modal-demo's own flow.
+     */
+    setChatContext(
+      state,
+      action: PayloadAction<{ customerId: string; accountId: string }>
+    ) {
+      state.selectedCustomerId = action.payload.customerId
+      state.selectedAccountId = action.payload.accountId
+      state.activeScenarioId = null
+    },
+    /**
+     * Clear the chatbot context (back to the list of values) WITHOUT touching
+     * `stage`/`open`. Used by the variant pages' "Change customer" control.
+     */
+    clearChatContext(state) {
+      state.selectedCustomerId = null
+      state.selectedAccountId = null
+      state.activeScenarioId = null
+    },
     playScenario(state, action: PayloadAction<string>) {
       state.activeScenarioId = action.payload
     },
@@ -78,6 +100,8 @@ export const {
   closeDemo,
   selectCustomer,
   setAccount,
+  setChatContext,
+  clearChatContext,
   playScenario,
   clearScenario,
   backToCustomerList,

@@ -9,6 +9,7 @@ import { ContactSection } from "@/components/sections/ContactSection"
 import { DemoDialog } from "@/components/demo/DemoDialog"
 import { DemoLauncher } from "@/components/demo/DemoLauncher"
 import { DataSourceToggle } from "@/components/demo/DataSourceToggle"
+import { VariantSwitcher } from "@/components/demo/variants/VariantSwitcher"
 
 export default function App() {
   return (
@@ -28,6 +29,9 @@ export default function App() {
       <DemoDialog />
       <DemoLauncher />
       <DataSourceToggle />
+
+      {/* Hop between the three chatbot design approaches */}
+      <VariantSwitcher floating />
     </div>
   )
 }
