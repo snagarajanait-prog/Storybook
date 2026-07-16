@@ -2,6 +2,7 @@ import {
   Bot,
   CheckCircle2,
   ClipboardCheck,
+  KeyRound,
   Loader2,
   RotateCcw,
   Send,
@@ -14,7 +15,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { type ChatStep } from "@/data/scenarios"
-import { OTP_DIGITS, useChatEngine, useCyclingPhrase } from "@/components/demo/useChatEngine"
+import { OtpInput } from "@/components/demo/OtpInput"
+import {
+  OTP_DIGITS,
+  useChatEngine,
+  useCyclingPhrase,
+  type OtpPrompt,
+} from "@/components/demo/useChatEngine"
 
 export function ChatWindow() {
   const {
@@ -27,6 +34,8 @@ export function ChatWindow() {
     thinking,
     typing,
     playing,
+    otpPrompt,
+    submitOtp,
     draft,
     setDraft,
     onSend,
@@ -54,9 +63,9 @@ export function ChatWindow() {
         <Badge
           variant={source === "C2M" ? "destructive" : "brand"}
           className="shrink-0"
-          title="Active internal data source"
+          title="Active assistant mode"
         >
-          {meta.short}
+          {meta.chatShort}
         </Badge>
         <button
           onClick={resetConversation}
@@ -73,6 +82,7 @@ export function ChatWindow() {
         {messages.map((m) => (
           <MessageBubble key={m.id} step={m.step} />
         ))}
+        {otpPrompt && <OtpChallenge prompt={otpPrompt} onSubmit={submitOtp} />}
         {thinking && <ThinkingIndicator phrases={thinking} />}
         {typing && <TypingBubble />}
       </div>
@@ -107,7 +117,7 @@ export function ChatWindow() {
           </Button>
         </div>
         <p className="mt-2 text-center text-[10px] text-muted-foreground">
-          Simulated demo · synthetic data · reads/writes {meta.label}
+          Simulated demo · synthetic data · reads/writes {meta.chatLabel}
         </p>
       </div>
     </div>
@@ -142,7 +152,10 @@ function MessageBubble({ step }: { step: ChatStep }) {
           </div>
         </div>
       )
-    case "otp":
+    case "otp": {
+      // `entered` is present only when the customer keyed the code in herself;
+      // otherwise this card is the auto-verified one and shows the demo code.
+      const digits = step.entered ? [...step.entered] : [...OTP_DIGITS]
       return (
         <div className="flex animate-fade-in gap-2">
           <AiAvatar />
@@ -153,7 +166,7 @@ function MessageBubble({ step }: { step: ChatStep }) {
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{step.text}</p>
             <div className="mt-2 flex gap-1.5">
-              {OTP_DIGITS.map((d, i) => (
+              {digits.map((d, i) => (
                 <span
                   key={i}
                   className="grid h-7 w-7 place-items-center rounded-md bg-slate-100 text-sm font-semibold text-slate-600"
@@ -165,6 +178,7 @@ function MessageBubble({ step }: { step: ChatStep }) {
           </div>
         </div>
       )
+    }
     case "summary":
       return (
         <div className="flex animate-fade-in gap-2">
@@ -214,6 +228,29 @@ function AiAvatar() {
     <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-cyan/15">
       <Bot className="h-4 w-4 text-brand-cyan" />
     </span>
+  )
+}
+
+/** The live identity check. Replaced by a verified card once a code is sent. */
+function OtpChallenge({
+  prompt,
+  onSubmit,
+}: {
+  prompt: OtpPrompt
+  onSubmit: (code: string) => void
+}) {
+  return (
+    <div className="flex animate-fade-in gap-2">
+      <AiAvatar />
+      <div className="max-w-[82%] rounded-xl border border-brand-cyan/40 bg-white p-3 shadow-sm ring-1 ring-brand-cyan/10">
+        <div className="flex items-center gap-2 text-sm font-medium text-brand-navy">
+          <KeyRound className="h-4 w-4 text-brand-cyan" />
+          Verify your identity · {prompt.channel === "sms" ? "SMS" : "Email"}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{prompt.text}</p>
+        <OtpInput tone="light" onSubmit={onSubmit} className="mt-2.5" />
+      </div>
+    </div>
   )
 }
 

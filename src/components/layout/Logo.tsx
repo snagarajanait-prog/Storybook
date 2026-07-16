@@ -1,28 +1,25 @@
 import { cn } from "@/lib/utils"
+import logoUrl from "./acse-logo.png"
 
-export function Logo({
-  className,
-  onLight = false,
-}: {
-  className?: string
-  onLight?: boolean
-}) {
+/**
+ * The ACSE Solutions AI lockup.
+ *
+ * `acse-logo.png` is the supplied artwork (kept alongside as `download.png`)
+ * with its transparent padding trimmed off. The PNG keeps its transparent
+ * background, so it sits directly on whatever surface hosts it — navy navbar,
+ * dark footer, or the light Concierge header alike.
+ *
+ * `className` sets the image height (defaults to h-8); the aspect ratio is
+ * preserved via `w-auto`.
+ */
+export function Logo({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-cyan/15 ring-1 ring-brand-cyan/30">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-          <path d="M12 3l7 12H5L12 3z" fill="#2ca5d9" />
-          <circle cx="12" cy="17" r="2.4" fill="#e33935" />
-        </svg>
-      </span>
-      <span
-        className={cn(
-          "text-[17px] font-bold tracking-tight",
-          onLight ? "text-brand-navy" : "text-white"
-        )}
-      >
-        ACSE<span className="text-brand-cyan"> AI</span>
-      </span>
-    </div>
+    <img
+      src={logoUrl}
+      alt="ACSE Solutions AI"
+      width={638}
+      height={220}
+      className={cn("h-8 w-auto select-none", className)}
+    />
   )
 }

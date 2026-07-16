@@ -1,16 +1,18 @@
 /**
- * Scripted chatbot storyboards — the "showtime" flows Obe asked for: pick a use
- * case and the AI walks the request from start to finish with mock data.
+ * Scripted chatbot storyboards: pick a use case and the AI walks the request
+ * from start to finish with mock data.
  *
  * Text may contain tokens resolved at render time against the selected account:
  *   {name}          customer name
  *   {account}       account number (chatbot context)
  *   {address}       service address
- *   {source}        active data source label (C2M (live) / Autonomous DB)
- *   {sourceSystem}  full system name of the active data source
+ *   {email}         email on file
+ *   {source}        neutral name of the active mode ("the demo service system")
+ *   {sourceSystem}  neutral platform name of the active mode
  *
- * The {source} tokens are what make the internal C2M/Autonomous toggle visible
- * in the conversation itself.
+ * The {source} tokens are what make the active mode visible in the conversation
+ * itself. They always resolve to the neutral chat vocabulary — an internal
+ * system is never named to the customer.
  *
  * `think` (optional on ai/status/summary steps): a list of short status phrases
  * shown one-by-one with a shimmering "working" animation just before the step
@@ -23,8 +25,22 @@ export type ChatStep =
   | { kind: "ai"; text: string; think?: string[] }
   /** A system status line (renders with a small activity indicator). */
   | { kind: "status"; text: string; think?: string[] }
-  /** Identity verification card (SMS / email OTP). */
-  | { kind: "otp"; channel: "sms" | "email"; text: string }
+  /**
+   * Identity verification card (SMS / email OTP).
+   *
+   * `text` is the card body once the code is accepted. `prompt` is the
+   * instruction shown above the entry boxes while the assistant waits for the
+   * customer to key a code in — its presence is what makes a step *able* to
+   * challenge; whether it actually does is decided at play time by the engine.
+   * `entered` is filled in at runtime with the digits the customer typed.
+   */
+  | {
+      kind: "otp"
+      channel: "sms" | "email"
+      text: string
+      prompt?: string
+      entered?: string
+    }
   /** A structured summary / confirmation card. */
   | { kind: "summary"; title: string; tone?: "info" | "success"; rows: [string, string][]; think?: string[] }
   /** Final success line. */
@@ -44,8 +60,10 @@ const scenarios: Record<string, Scenario> = {
     steps: [
       { kind: "user", text: "I'd like to start water service at a new address." },
       { kind: "ai", text: "Happy to help you start service, {name}. First I need to confirm it's really you on account {account}." },
-      { kind: "status", text: "Sending a one-time code to the phone on file…" },
-      { kind: "otp", channel: "sms", text: "A 6-digit code was sent by SMS. (Demo: auto-verified)" },
+      { kind: "status", text: "Sending a one-time code to the email on file…" },
+      { kind: "otp", channel: "email",
+        text: "Identity confirmed with the code sent to {email}.",
+        prompt: "We emailed a 6-digit code to {email}. Enter it below to continue." },
       { kind: "ai", text: "Thanks — you're verified. Which address would you like to start service at?" },
       { kind: "user", text: "1450 Oak Meadow Dr, Santa Clara, CA 95051." },
       { kind: "status", text: "Checking the address against the utility service territory…" },

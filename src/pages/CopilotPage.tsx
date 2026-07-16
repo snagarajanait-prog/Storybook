@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   CheckCircle2,
   ClipboardCheck,
-  Database,
+  FlaskConical,
+  KeyRound,
   Loader2,
   PanelLeft,
   RotateCcw,
@@ -14,13 +15,16 @@ import {
 
 import { cn, splitReference } from "@/lib/utils"
 import { type ChatStep } from "@/data/scenarios"
+import { OtpInput } from "@/components/demo/OtpInput"
 import {
   OTP_DIGITS,
   useChatEngine,
   useCyclingPhrase,
   type EnginePill,
   type Msg,
+  type OtpPrompt,
 } from "@/components/demo/useChatEngine"
+import { Logo } from "@/components/layout/Logo"
 import { AccountPanel } from "@/components/demo/variants/AccountPanel"
 import { CustomerList } from "@/components/demo/variants/CustomerList"
 import { SlideOver } from "@/components/demo/variants/SlideOver"
@@ -40,7 +44,7 @@ import { useAppDispatch } from "@/store/hooks"
 export default function CopilotPage() {
   const dispatch = useAppDispatch()
   const engine = useChatEngine()
-  const { customer, account, source, meta, messages, thinking, typing, playing, resetConversation } =
+  const { customer, account, source, meta, messages, thinking, typing, playing, otpPrompt, submitOtp, resetConversation } =
     engine
   const [panelOpen, setPanelOpen] = useState(false)
   const closePanel = useCallback(() => setPanelOpen(false), [])
@@ -75,13 +79,7 @@ export default function CopilotPage() {
 
       {/* Header */}
       <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.06] bg-brand-navydeep/60 px-4 backdrop-blur-xl md:px-6">
-        <span className="relative grid h-6 w-6 place-items-center">
-          <span className="h-2.5 w-2.5 rounded-full bg-brand-cyan" />
-          <span className="absolute inset-0 rounded-full bg-brand-cyan/30 blur-md motion-safe:animate-orb-breathe" />
-        </span>
-        <span className="whitespace-nowrap text-[13px] font-semibold tracking-tight text-slate-200">
-          ACSE AI
-        </span>
+        <Logo className="h-6" />
         <span className="hidden rounded-full border border-brand-cyan/20 px-2 py-0.5 text-[11px] text-brand-cyan/80 sm:inline">
           Copilot
         </span>
@@ -106,7 +104,7 @@ export default function CopilotPage() {
 
         <div className="ml-auto flex items-center gap-2">
           <VariantSwitcher tone="dark" />
-          <SourcePill source={source} system={meta.system} short={meta.short} />
+          <SourcePill source={source} system={meta.chatSystem} short={meta.chatShort} />
           {hasContext && (
             <>
               <button
@@ -166,6 +164,7 @@ export default function CopilotPage() {
                     {messages.map((m, i) => (
                       <Turn key={m.id} msg={m} source={source} isLast={i === messages.length - 1} playing={playing} />
                     ))}
+                    {otpPrompt && <OtpChallengeNode prompt={otpPrompt} onSubmit={submitOtp} />}
                     {thinking && <ThinkingNode phrases={thinking} />}
                     {typing && <TypingNode />}
                   </ol>
@@ -305,7 +304,7 @@ function Turn({
       return (
         <li className="relative pl-9 motion-safe:animate-rise-in">
           <Node />
-          <OtpCard channel={step.channel} text={step.text} />
+          <OtpCard channel={step.channel} text={step.text} entered={step.entered} />
         </li>
       )
     case "summary":
@@ -343,7 +342,17 @@ function Lede({ text }: { text: string }) {
   )
 }
 
-function OtpCard({ channel, text }: { channel: "sms" | "email"; text: string }) {
+function OtpCard({
+  channel,
+  text,
+  entered,
+}: {
+  channel: "sms" | "email"
+  text: string
+  /** Present only when the customer keyed the code in; otherwise auto-verified. */
+  entered?: string
+}) {
+  const digits = entered ? [...entered] : [...OTP_DIGITS]
   return (
     <div className="rounded-2xl bg-white/[0.04] p-4 shadow-[0_0_40px_-18px_rgba(16,185,129,0.5)] ring-1 ring-white/10 backdrop-blur-xl">
       <div className="flex items-center gap-2">
@@ -355,8 +364,8 @@ function OtpCard({ channel, text }: { channel: "sms" | "email"; text: string }) 
         </span>
       </div>
       <p className="mt-1 text-xs text-slate-400">{text}</p>
-      <div className="mt-3 grid grid-cols-6 gap-2" aria-label={`Verification code ${OTP_DIGITS.join(" ")}`}>
-        {OTP_DIGITS.map((d, i) => (
+      <div className="mt-3 grid grid-cols-6 gap-2" aria-label={`Verification code ${digits.join(" ")}`}>
+        {digits.map((d, i) => (
           <span
             key={i}
             style={{ animationDelay: `${i * 90}ms` }}
@@ -367,6 +376,33 @@ function OtpCard({ channel, text }: { channel: "sms" | "email"; text: string }) 
         ))}
       </div>
     </div>
+  )
+}
+
+/** The live identity check. Replaced by an OtpCard once a code is submitted. */
+function OtpChallengeNode({
+  prompt,
+  onSubmit,
+}: {
+  prompt: OtpPrompt
+  onSubmit: (code: string) => void
+}) {
+  return (
+    <li className="relative pl-9 motion-safe:animate-rise-in">
+      <Node />
+      <div className="rounded-2xl bg-white/[0.04] p-4 shadow-[0_0_40px_-18px_rgba(44,165,217,0.5)] ring-1 ring-brand-cyan/25 backdrop-blur-xl">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-cyan/12 text-brand-cyan">
+            <KeyRound className="h-4 w-4" />
+          </span>
+          <span className="text-[13px] font-medium text-slate-100">
+            Verify your identity · {prompt.channel === "sms" ? "SMS" : "Email"}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-slate-400">{prompt.text}</p>
+        <OtpInput tone="dark" onSubmit={onSubmit} className="mt-3" />
+      </div>
+    </li>
   )
 }
 
@@ -526,7 +562,7 @@ function Composer({ engine, mode }: { engine: ReturnType<typeof useChatEngine>; 
         </button>
       </div>
       <p className="mt-2 text-center text-[11px] text-slate-400">
-        Simulated demo · synthetic data · reads/writes {meta.label}
+        Simulated demo · synthetic data · reads/writes {meta.chatLabel}
       </p>
     </div>
   )
@@ -561,24 +597,24 @@ function Chip({
 /* ----------------------------- Header pieces ----------------------------- */
 
 function SourcePill({ source, system, short }: { source: string; system: string; short: string }) {
-  const isC2M = source === "C2M"
+  const isLive = source === "C2M"
   return (
     <span
-      aria-label={`Internal data source: ${system} — staff only, not customer-facing`}
+      aria-label={`Assistant mode: ${system}`}
       className={cn(
         "hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 sm:inline-flex",
-        isC2M ? "bg-brand-red/10 text-brand-red ring-brand-red/40" : "bg-brand-cyan/10 text-brand-cyan ring-brand-cyan/30"
+        isLive ? "bg-brand-red/10 text-brand-red ring-brand-red/40" : "bg-brand-cyan/10 text-brand-cyan ring-brand-cyan/30"
       )}
     >
-      {isC2M ? (
+      {isLive ? (
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75 motion-safe:animate-ping" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-red" />
         </span>
       ) : (
-        <Database className="h-3 w-3" />
+        <FlaskConical className="h-3 w-3" />
       )}
-      Source · {short}
+      Mode · {short}
     </span>
   )
 }

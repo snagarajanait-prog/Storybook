@@ -23,6 +23,13 @@ export interface EnginePill extends UseCase {
   Icon: ReturnType<typeof getIcon>
 }
 
+/** A live identity challenge: the storyboard is held until a code is entered. */
+export interface OtpPrompt {
+  channel: "sms" | "email"
+  /** Instruction to show above the entry boxes, already token-resolved. */
+  text: string
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /**
@@ -32,8 +39,18 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
  */
 export const THINK_INTERVAL_MS = 750
 
-/** The demo verification code shown in every OTP card (presentation-only). */
+/** The verification code shown on auto-verified OTP cards (presentation-only). */
 export const OTP_DIGITS = ["6", "2", "9", "1", "0", "4"] as const
+
+/**
+ * Scenarios whose OTP step is a real challenge — playback stops and waits for
+ * the customer to key a code in — rather than a card that auto-verifies itself.
+ *
+ * Whether the challenge actually fires also depends on the active mode: only
+ * modes with `promptsForOtp` ask (see DATA_SOURCE_META). Every other scenario
+ * keeps the auto-verified card in both modes.
+ */
+const OTP_ENTRY_SCENARIOS = new Set(["start-service"])
 
 /**
  * Cycle through a list of phrases one at a time (used by the "thinking"
@@ -128,6 +145,14 @@ export interface ChatEngine {
   typing: boolean
   /** True while a storyboard/response is playing (locks the composer). */
   playing: boolean
+  /**
+   * Set while the storyboard is held on an identity challenge. Render an entry
+   * box for it; `playing` stays true throughout, so the composer stays locked
+   * and the code is the only way forward.
+   */
+  otpPrompt: OtpPrompt | null
+  /** Accept the typed code and resume the held storyboard. */
+  submitOtp: (code: string) => void
   draft: string
   setDraft: (v: string) => void
   onSend: () => void
@@ -155,10 +180,26 @@ export function useChatEngine(): ChatEngine {
   const [typing, setTyping] = useState(false)
   const [thinking, setThinking] = useState<string[] | null>(null)
   const [playing, setPlaying] = useState(false)
+  const [otpPrompt, setOtpPrompt] = useState<OtpPrompt | null>(null)
   const [draft, setDraft] = useState("")
   const idRef = useRef(0)
   const runRef = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const otpResolveRef = useRef<((code: string | null) => void) | null>(null)
+
+  /**
+   * Settle a held challenge: `code` resumes the storyboard, null abandons it.
+   * Always call this when tearing a run down — a held `play` is parked on this
+   * promise and would never finish (leaving `playing` stuck true) otherwise.
+   */
+  const settleOtp = useCallback((code: string | null) => {
+    const resolve = otpResolveRef.current
+    otpResolveRef.current = null
+    setOtpPrompt(null)
+    resolve?.(code)
+  }, [])
+
+  const submitOtp = useCallback((code: string) => settleOtp(code), [settleOtp])
 
   // Reset the conversation synchronously when the customer/account context
   // changes — DURING render, so a switch never paints the new account's context
@@ -172,6 +213,7 @@ export function useChatEngine(): ChatEngine {
     setPlaying(false)
     setTyping(false)
     setThinking(null)
+    settleOtp(null)
     setMessages(
       customer
         ? [{ id: idRef.current++, step: { kind: "ai", text: greeting(customer.name) } }]
@@ -183,12 +225,15 @@ export function useChatEngine(): ChatEngine {
     (text: string) => {
       if (!customer || !account) return text
       const meta = DATA_SOURCE_META[sourceRef.current]
+      // Always the neutral chat vocabulary — the internal source names belong to
+      // the staff-only toggle and must never reach the conversation.
       return text
         .split("{name}").join(customer.name)
         .split("{account}").join(account.id)
         .split("{address}").join(account.serviceAddress)
-        .split("{source}").join(meta.label)
-        .split("{sourceSystem}").join(meta.system)
+        .split("{email}").join(customer.email)
+        .split("{source}").join(meta.chatLabel)
+        .split("{sourceSystem}").join(meta.chatSystem)
     },
     [customer, account]
   )
@@ -223,11 +268,16 @@ export function useChatEngine(): ChatEngine {
   }
 
   const play = useCallback(
-    async (steps: ChatStep[], firstUserText?: string) => {
+    async (steps: ChatStep[], firstUserText?: string, scenarioId?: string) => {
       const myRun = ++runRef.current
+      // Abandon a challenge left held by the run we just superseded.
+      settleOtp(null)
       setPlaying(true)
       setTyping(false)
       setThinking(null)
+      const challenges =
+        Boolean(scenarioId && OTP_ENTRY_SCENARIOS.has(scenarioId)) &&
+        DATA_SOURCE_META[sourceRef.current].promptsForOtp
       for (let i = 0; i < steps.length; i++) {
         if (runRef.current !== myRun) return
         const raw = steps[i]
@@ -239,6 +289,22 @@ export function useChatEngine(): ChatEngine {
               ? { kind: "user", text: firstUserText }
               : resolveStep(raw)
           )
+        } else if (raw.kind === "otp" && raw.prompt && challenges) {
+          // Hold here: no timer resumes this, only a submitted code does.
+          setTyping(true)
+          await sleep(delayFor(raw))
+          if (runRef.current !== myRun) {
+            setTyping(false)
+            return
+          }
+          setTyping(false)
+          setOtpPrompt({ channel: raw.channel, text: resolve(raw.prompt) })
+          const code = await new Promise<string | null>((r) => {
+            otpResolveRef.current = r
+          })
+          if (runRef.current !== myRun || code === null) return
+          push({ ...(resolveStep(raw) as typeof raw), entered: code })
+          await sleep(150)
         } else {
           const phrases = thinkPhrasesFor(raw, i > 0 && steps[i - 1].kind === "user")
           if (phrases) {
@@ -266,14 +332,14 @@ export function useChatEngine(): ChatEngine {
       }
       setPlaying(false)
     },
-    [push, resolve, resolveStep]
+    [push, resolve, resolveStep, settleOtp]
   )
 
   const startScenario = useCallback(
     (id: string, userText?: string) => {
       const scenario = getScenario(id)
       if (!scenario) return
-      void play(scenario.steps, userText)
+      void play(scenario.steps, userText, scenario.id)
     },
     [play]
   )
@@ -284,13 +350,14 @@ export function useChatEngine(): ChatEngine {
     setPlaying(false)
     setTyping(false)
     setThinking(null)
+    settleOtp(null)
     idRef.current = 0
     if (customer) {
       setMessages([{ id: idRef.current++, step: { kind: "ai", text: greeting(customer.name) } }])
     } else {
       setMessages([])
     }
-  }, [customer])
+  }, [customer, settleOtp])
 
   // Auto-play a scenario requested from elsewhere (e.g. use-case cards).
   useEffect(() => {
@@ -304,7 +371,7 @@ export function useChatEngine(): ChatEngine {
   // Auto-scroll to newest.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
-  }, [messages, typing, thinking])
+  }, [messages, typing, thinking, otpPrompt])
 
   const onSend = useCallback(() => {
     const text = draft.trim()
@@ -348,6 +415,8 @@ export function useChatEngine(): ChatEngine {
     thinking,
     typing,
     playing,
+    otpPrompt,
+    submitOtp,
     draft,
     setDraft,
     onSend,

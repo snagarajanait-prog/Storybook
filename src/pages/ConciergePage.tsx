@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   CheckCircle2,
   ClipboardCheck,
+  KeyRound,
   Keyboard,
   Lock,
   Mic,
@@ -15,13 +16,16 @@ import {
 
 import { cn, splitReference } from "@/lib/utils"
 import { type ChatStep } from "@/data/scenarios"
+import { OtpInput } from "@/components/demo/OtpInput"
 import {
   OTP_DIGITS,
   useChatEngine,
   useCyclingPhrase,
   type EnginePill,
   type Msg,
+  type OtpPrompt,
 } from "@/components/demo/useChatEngine"
+import { Logo } from "@/components/layout/Logo"
 import { AccountPanel } from "@/components/demo/variants/AccountPanel"
 import { CustomerList } from "@/components/demo/variants/CustomerList"
 import { SlideOver } from "@/components/demo/variants/SlideOver"
@@ -44,7 +48,8 @@ const IVORY = "#f7f4ee"
 export default function ConciergePage() {
   const dispatch = useAppDispatch()
   const engine = useChatEngine()
-  const { customer, account, source, meta, messages, thinking, typing, playing, scrollRef } = engine
+  const { customer, account, source, meta, messages, thinking, typing, playing, otpPrompt, submitOtp, scrollRef } =
+    engine
   const [panelOpen, setPanelOpen] = useState(false)
   const closePanel = useCallback(() => setPanelOpen(false), [])
 
@@ -69,9 +74,11 @@ export default function ConciergePage() {
     ? "Thinking…"
     : typing
       ? "Speaking…"
-      : lastIsDone
-        ? "Call complete"
-        : "On the line"
+      : otpPrompt
+        ? "Waiting for your code"
+        : lastIsDone
+          ? "Call complete"
+          : "On the line"
 
   // The freshest spoken line becomes the big live caption under the orb.
   let caption = "Connecting you to the ACSE concierge…"
@@ -86,6 +93,9 @@ export default function ConciergePage() {
       break
     }
   }
+  // A live challenge is the concierge's most recent utterance — it outranks the
+  // transcript, which hasn't caught up with it yet.
+  if (otpPrompt) caption = otpPrompt.text
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden font-sans" style={{ backgroundColor: IVORY }}>
@@ -97,7 +107,10 @@ export default function ConciergePage() {
       {/* Header */}
       <header className="relative z-20 flex h-14 shrink-0 items-center justify-between border-b border-slate-200/60 bg-white/40 px-4 backdrop-blur-sm md:px-5">
         <div className="flex items-center gap-2.5">
-          <span className="whitespace-nowrap text-sm font-semibold text-brand-navy">ACSE Concierge</span>
+          <Logo className="h-6" />
+          <span className="hidden rounded-full border border-brand-cyan/25 px-2 py-0.5 text-[11px] font-medium text-[#16789f] sm:inline">
+            Concierge
+          </span>
           {hasContext && (
             <>
               <span
@@ -130,7 +143,7 @@ export default function ConciergePage() {
           <div className="hidden md:block">
             <VariantSwitcher tone="light" />
           </div>
-          <LineChip source={source} short={meta.short} system={meta.system} playing={playing} />
+          <LineChip source={source} short={meta.chatShort} system={meta.chatSystem} playing={playing} />
           {hasContext && (
             <button
               onClick={() => setPanelOpen(true)}
@@ -182,8 +195,9 @@ export default function ConciergePage() {
               <div className="mx-auto w-full max-w-[620px] px-6 py-8 [mask-image:linear-gradient(to_bottom,transparent,#000_8%,#000_92%,transparent)]">
                 <ol role="log" aria-live="polite" className="relative ml-4 space-y-7 border-l border-slate-200/70 pl-6">
                   {messages.map((m) => (
-                    <TranscriptTurn key={m.id} msg={m} sourceLabel={meta.label} />
+                    <TranscriptTurn key={m.id} msg={m} sourceLabel={meta.chatLabel} />
                   ))}
+                  {otpPrompt && <OtpChallengeSlip prompt={otpPrompt} onSubmit={submitOtp} />}
                 </ol>
               </div>
             </div>
@@ -328,7 +342,7 @@ function TranscriptTurn({ msg, sourceLabel }: { msg: Msg; sourceLabel: string })
     case "otp":
       return (
         <li className="relative">
-          <OtpSlip channel={step.channel} text={step.text} />
+          <OtpSlip channel={step.channel} text={step.text} entered={step.entered} />
         </li>
       )
     case "summary":
@@ -389,7 +403,17 @@ function StatusText({ text, label }: { text: string; label: string }) {
   )
 }
 
-function OtpSlip({ channel, text }: { channel: "sms" | "email"; text: string }) {
+function OtpSlip({
+  channel,
+  text,
+  entered,
+}: {
+  channel: "sms" | "email"
+  text: string
+  /** Present only when the caller keyed the code in; otherwise auto-verified. */
+  entered?: string
+}) {
+  const digits = entered ? [...entered] : [...OTP_DIGITS]
   return (
     <div className="mx-auto max-w-sm animate-fade-in rounded-2xl bg-white/85 p-4 shadow-[0_10px_40px_-20px_rgba(10,30,53,0.4)] ring-1 ring-brand-cyan/20 backdrop-blur">
       <div className="flex items-center gap-2">
@@ -401,8 +425,8 @@ function OtpSlip({ channel, text }: { channel: "sms" | "email"; text: string }) 
         </span>
       </div>
       <p className="mt-1 text-xs text-slate-600">{text}</p>
-      <div className="mt-3 grid grid-cols-6 gap-2" aria-label={`Verification code ${OTP_DIGITS.join(" ")}`}>
-        {OTP_DIGITS.map((d, i) => (
+      <div className="mt-3 grid grid-cols-6 gap-2" aria-label={`Verification code ${digits.join(" ")}`}>
+        {digits.map((d, i) => (
           <span
             key={i}
             style={{ animationDelay: `${i * 90}ms` }}
@@ -413,6 +437,33 @@ function OtpSlip({ channel, text }: { channel: "sms" | "email"; text: string }) 
         ))}
       </div>
     </div>
+  )
+}
+
+/** The live identity check. Replaced by an OtpSlip once a code is submitted. */
+function OtpChallengeSlip({
+  prompt,
+  onSubmit,
+}: {
+  prompt: OtpPrompt
+  onSubmit: (code: string) => void
+}) {
+  return (
+    <li className="relative">
+      <SpineDot tone="cyan" />
+      <div className="mx-auto max-w-sm animate-fade-in rounded-2xl bg-white p-4 shadow-[0_10px_40px_-20px_rgba(10,30,53,0.4)] ring-1 ring-brand-cyan/40">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-cyan/12 text-brand-cyan">
+            <KeyRound className="h-4 w-4" />
+          </span>
+          <span className="text-[13px] font-medium text-brand-navy">
+            Verify your identity · {prompt.channel === "sms" ? "SMS" : "Email"}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-slate-600">{prompt.text}</p>
+        <OtpInput tone="ivory" onSubmit={onSubmit} className="mt-3" />
+      </div>
+    </li>
   )
 }
 
@@ -615,17 +666,17 @@ function LineChip({
   system: string
   playing: boolean
 }) {
-  const isC2M = source === "C2M"
+  const isLive = source === "C2M"
   return (
     <span
-      aria-label={`Internal data source: ${system} — staff only`}
+      aria-label={`Assistant mode: ${system}`}
       className={cn(
         "hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 sm:inline-flex",
-        isC2M ? "bg-brand-red/5 text-brand-red ring-brand-red/25" : "bg-brand-cyan/5 text-brand-navy ring-brand-cyan/25",
+        isLive ? "bg-brand-red/5 text-brand-red ring-brand-red/25" : "bg-brand-cyan/5 text-brand-navy ring-brand-cyan/25",
         playing && "motion-safe:animate-pulse"
       )}
     >
-      <Lock className={cn("h-3 w-3", isC2M ? "text-brand-red" : "text-brand-cyan")} />
+      <Lock className={cn("h-3 w-3", isLive ? "text-brand-red" : "text-brand-cyan")} />
       Line · {short}
     </span>
   )
