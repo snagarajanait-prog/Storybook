@@ -29,8 +29,8 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-white/10 bg-brand-navy/95 backdrop-blur transition-shadow",
-        scrolled && "shadow-lg shadow-black/20"
+        "sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur transition-shadow",
+        scrolled && "shadow-lg shadow-slate-900/5"
       )}
     >
       <nav className="container flex h-[70px] items-center justify-between">
@@ -43,7 +43,7 @@ export function Navbar() {
             <li key={l.href}>
               <a
                 href={l.href}
-                className="text-[15px] text-white/75 transition-colors hover:text-white"
+                className="text-[15px] text-slate-600 transition-colors hover:text-brand-navy"
               >
                 {l.label}
               </a>
@@ -59,7 +59,7 @@ export function Navbar() {
         </div>
 
         <button
-          className="grid h-10 w-10 place-items-center rounded-md text-white md:hidden"
+          className="grid h-10 w-10 place-items-center rounded-md text-brand-navy md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle menu"
         >
@@ -68,14 +68,14 @@ export function Navbar() {
       </nav>
 
       {mobileOpen && (
-        <div className="border-t border-white/10 bg-brand-navy px-6 py-4 md:hidden">
+        <div className="border-t border-slate-200 bg-white px-6 py-4 md:hidden">
           <ul className="flex flex-col gap-1">
             {links.map((l) => (
               <li key={l.href}>
                 <a
                   href={l.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block rounded-md px-2 py-2.5 text-white/80 hover:bg-white/5"
+                  className="block rounded-md px-2 py-2.5 text-slate-700 hover:bg-slate-50"
                 >
                   {l.label}
                 </a>
