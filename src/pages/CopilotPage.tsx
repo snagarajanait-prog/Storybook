@@ -10,7 +10,6 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
-  Users,
 } from "lucide-react"
 
 import { cn, splitReference } from "@/lib/utils"
@@ -26,14 +25,20 @@ import {
 } from "@/components/demo/useChatEngine"
 import { Logo } from "@/components/layout/Logo"
 import { AccountVerify } from "@/components/demo/AccountVerify"
-import { VerifiedChip } from "@/components/demo/VerifiedChip"
 import { AccountPanel } from "@/components/demo/variants/AccountPanel"
 import { CustomerList } from "@/components/demo/variants/CustomerList"
 import { SlideOver } from "@/components/demo/variants/SlideOver"
 import { VariantSwitcher } from "@/components/demo/variants/VariantSwitcher"
 import { DataSourceToggle } from "@/components/demo/DataSourceToggle"
-import { clearChatContext, setChatContext } from "@/store/demoSlice"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { setChatContext } from "@/store/demoSlice"
+import { useAppSelector } from "@/store/hooks"
+
+/**
+ * White-label tenant brand shown top-left. This is the *client's* company, not
+ * ACSE — ACSE is credited as "Powered by" on the right. Swap CLIENT_NAME (and
+ * the monogram in `ClientBrand`) for the client's real name / logo artwork.
+ */
+const CLIENT_NAME = "XYZ Company"
 
 /**
  * V1 · "Filament — The Reasoning Thread".
@@ -45,7 +50,6 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
  * variant.
  */
 export default function CopilotPage() {
-  const dispatch = useAppDispatch()
   const engine = useChatEngine()
   const { customer, account, source, meta, messages, thinking, typing, playing, otpPrompt, submitOtp, resetConversation } =
     engine
@@ -85,29 +89,8 @@ export default function CopilotPage() {
 
       {/* Header */}
       <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white/70 px-4 backdrop-blur-xl md:px-6">
-        <Logo className="h-6" />
-        <span className="hidden rounded-full border border-brand-cyan/25 px-2 py-0.5 text-[11px] font-medium text-[#16789f] sm:inline">
-          Copilot
-        </span>
-
-        {hasContext && customer && account && (
-          <>
-            <span className="mx-1 hidden h-4 w-px bg-slate-200 sm:block" />
-            <button
-              onClick={() => dispatch(clearChatContext())}
-              title="Change customer"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm outline-none transition-colors hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-brand-cyan sm:px-3"
-            >
-              <Users className="h-3.5 w-3.5 text-brand-cyan" />
-              {/* Names the icon-only mobile button without masking the visible
-                  label in the accessible name at sm+ (WCAG 2.5.3). */}
-              <span className="sr-only">Change customer</span>
-              <span className="hidden max-w-[10rem] truncate sm:inline">{customer.name}</span>
-              <span className="hidden font-mono text-slate-400 sm:inline">· {account.id}</span>
-            </button>
-            <VerifiedChip tone="light" className="hidden lg:inline-flex" />
-          </>
-        )}
+        {/* White-label: the client's own brand, top-left (not ACSE). */}
+        <ClientBrand />
 
         <div className="ml-auto flex items-center gap-2">
           <VariantSwitcher tone="light" />
@@ -132,6 +115,8 @@ export default function CopilotPage() {
               </button>
             </>
           )}
+          <span aria-hidden className="mx-0.5 hidden h-6 w-px bg-slate-200 sm:block" />
+          <PoweredBy />
         </div>
       </header>
 
@@ -600,6 +585,39 @@ function Chip({
       <pill.Icon className="h-3.5 w-3.5 text-brand-cyan" />
       {pill.label}
     </button>
+  )
+}
+
+/* ------------------------------ Header brand ----------------------------- */
+
+/**
+ * The client's own brand, top-left (white-label). The mark here is a placeholder
+ * monogram derived from CLIENT_NAME — replace it with an `<img>` of the client's
+ * real logo when supplied (drop the artwork next to `acse-logo.png` and import
+ * it the same way `Logo` does).
+ */
+function ClientBrand() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-brand-cyan to-brand-navy text-sm font-bold text-white shadow-sm">
+        {CLIENT_NAME.charAt(0)}
+      </span>
+      <span className="text-[15px] font-semibold tracking-tight text-brand-navy">
+        {CLIENT_NAME}
+      </span>
+    </div>
+  )
+}
+
+/** "Powered by ACSE" attribution, top-right. */
+function PoweredBy() {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="hidden text-[10px] font-medium uppercase tracking-wide text-slate-400 sm:inline">
+        Powered by
+      </span>
+      <Logo className="h-5" />
+    </div>
   )
 }
 
