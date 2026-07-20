@@ -5,11 +5,13 @@ import {
   FlaskConical,
   KeyRound,
   Loader2,
+  Moon,
   PanelLeft,
   RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
+  Sun,
 } from "lucide-react"
 
 import { cn, splitReference } from "@/lib/utils"
@@ -40,20 +42,37 @@ import { useAppSelector } from "@/store/hooks"
  */
 const CLIENT_NAME = "XYZ Company"
 
+/** Which palette the page is painted in. V1 is the only variant that switches. */
+type Theme = "light" | "dark"
+
 /**
  * V1 · "Filament — The Reasoning Thread".
  *
- * A full-viewport, committed-dark immersive copilot. Opens on the list of
+ * A full-viewport immersive copilot that can be shown in either palette — the
+ * header carries a light/dark switch (this variant only). Opens on the list of
  * values; once a customer is picked, a persistent account panel sits beside a
  * conversation that runs down a single glowing cyan filament (bubble-less
  * typeset prose on nodes). Shares the exact chat engine with every variant.
+ *
+ * Theming: the root div carries the `dark` class, so everything below it styles
+ * itself with Tailwind `dark:` variants — no prop drilling. The shared demo
+ * components (account panel, customer list, …) predate that and take an explicit
+ * `tone` prop instead, so they are handed `tone={theme}`. Note the root's own
+ * colours are conditional rather than `dark:`, because Tailwind's class strategy
+ * compiles `dark:` to a descendant selector — an element holding `.dark` cannot
+ * match its own `dark:` utilities.
  */
 export default function CopilotPage() {
   const engine = useChatEngine()
   const { customer, account, source, meta, messages, thinking, typing, playing, otpPrompt, submitOtp, resetConversation } =
     engine
   const [panelOpen, setPanelOpen] = useState(false)
+  const [theme, setTheme] = useState<Theme>("dark")
   const closePanel = useCallback(() => setPanelOpen(false), [])
+  const toggleTheme = useCallback(
+    () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+    []
+  )
   // An account picked but held at the identity gate. It outranks the list *and*
   // any standing context, so a fresh pick can never slip in behind the gate.
   const verifying = useAppSelector((s) => Boolean(s.demo.pendingAccountId))
@@ -83,22 +102,28 @@ export default function CopilotPage() {
     messages[0]?.step.kind === "ai" ? messages[0].step.text : "How can I help you today?"
 
   return (
-    <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-brand-navydeep font-sans text-slate-100 antialiased">
+    <div
+      className={cn(
+        "relative flex h-[100dvh] w-full flex-col overflow-hidden font-sans antialiased transition-colors duration-300",
+        theme === "dark" ? "dark bg-brand-navydeep text-slate-100" : "bg-white text-brand-navy"
+      )}
+    >
       <AmbientBackdrop />
 
       {/* Header */}
-      <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.06] bg-brand-navydeep/60 px-4 backdrop-blur-xl md:px-6">
+      <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white/70 px-4 backdrop-blur-xl transition-colors md:px-6 dark:border-white/[0.06] dark:bg-brand-navydeep/60">
         {/* White-label: the client's own brand, top-left (not ACSE). */}
         <ClientBrand />
 
         <div className="ml-auto flex items-center gap-2">
-          <VariantSwitcher tone="dark" />
+          <VariantSwitcher tone={theme} />
           <SourcePill source={source} system={meta.chatSystem} short={meta.chatShort} />
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
           {hasContext && (
             <>
               <button
                 onClick={() => setPanelOpen(true)}
-                className="grid h-8 w-8 place-items-center rounded-md text-slate-400 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-brand-cyan lg:hidden"
+                className="grid h-8 w-8 place-items-center rounded-md text-slate-500 outline-none transition-colors hover:bg-slate-100 hover:text-brand-navy focus-visible:ring-2 focus-visible:ring-brand-cyan lg:hidden dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label="Open account details"
               >
                 <PanelLeft className="h-4 w-4" />
@@ -106,7 +131,7 @@ export default function CopilotPage() {
               <button
                 onClick={resetConversation}
                 disabled={playing}
-                className="grid h-8 w-8 place-items-center rounded-md text-slate-400 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-brand-cyan disabled:opacity-40"
+                className="grid h-8 w-8 place-items-center rounded-md text-slate-500 outline-none transition-colors hover:bg-slate-100 hover:text-brand-navy focus-visible:ring-2 focus-visible:ring-brand-cyan disabled:opacity-40 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label="New chat"
                 title="New chat"
               >
@@ -114,7 +139,7 @@ export default function CopilotPage() {
               </button>
             </>
           )}
-          <span aria-hidden className="mx-0.5 hidden h-6 w-px bg-white/10 sm:block" />
+          <span aria-hidden className="mx-0.5 hidden h-6 w-px bg-slate-200 sm:block dark:bg-white/10" />
           <PoweredBy />
         </div>
       </header>
@@ -122,16 +147,16 @@ export default function CopilotPage() {
       {!hasContext ? (
         <div className="relative z-10 min-h-0 flex-1 overflow-hidden">
           {verifying ? (
-            <AccountVerify tone="dark" grant={setChatContext} />
+            <AccountVerify tone={theme} grant={setChatContext} />
           ) : (
-            <CustomerList tone="dark" />
+            <CustomerList tone={theme} />
           )}
         </div>
       ) : (
         <div className="relative z-10 flex min-h-0 flex-1">
           {/* Persistent account panel (desktop) */}
-          <aside className="hidden w-[340px] shrink-0 border-r border-white/10 bg-brand-navy/20 lg:block">
-            <AccountPanel tone="dark" />
+          <aside className="hidden w-[340px] shrink-0 border-r border-slate-200 bg-slate-50/60 transition-colors lg:block dark:border-white/10 dark:bg-brand-navy/20">
+            <AccountPanel tone={theme} />
           </aside>
 
           {/* Conversation area */}
@@ -142,10 +167,10 @@ export default function CopilotPage() {
                   <span className="relative mb-8 grid h-16 w-16 place-items-center">
                     <span className="h-16 w-16 rounded-full bg-[radial-gradient(circle_at_35%_30%,#7fd3f2,#2ca5d9_55%,#0a1e35)] shadow-[0_0_60px_-8px_rgba(44,165,217,0.7)] motion-safe:animate-orb-breathe" />
                   </span>
-                  <h1 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-slate-100 md:text-4xl">
+                  <h1 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-brand-navy md:text-4xl dark:text-slate-100">
                     {greetingText}
                   </h1>
-                  <p className="mt-3 text-[15px] text-slate-400">
+                  <p className="mt-3 text-[15px] text-slate-500 dark:text-slate-400">
                     Ask about a bill, start or stop service, or report a leak — I'll walk it through.
                   </p>
                   <div className="mt-8 w-full">
@@ -159,7 +184,7 @@ export default function CopilotPage() {
                     {messages.map((m, i) => (
                       <Turn key={m.id} msg={m} source={source} isLast={i === messages.length - 1} playing={playing} />
                     ))}
-                    {otpPrompt && <OtpChallengeNode prompt={otpPrompt} onSubmit={submitOtp} />}
+                    {otpPrompt && <OtpChallengeNode prompt={otpPrompt} onSubmit={submitOtp} tone={theme} />}
                     {thinking && <ThinkingNode phrases={thinking} />}
                     {typing && <TypingNode />}
                   </ol>
@@ -171,7 +196,7 @@ export default function CopilotPage() {
               <div className="relative shrink-0">
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-t from-brand-navydeep to-transparent"
+                  className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-t from-white to-transparent dark:from-brand-navydeep"
                 />
                 <div className="relative mx-auto w-full max-w-2xl px-5 pb-6 pt-2">
                   <Composer engine={engine} mode="dock" />
@@ -184,8 +209,8 @@ export default function CopilotPage() {
 
       {/* Account panel on smaller viewports */}
       {hasContext && (
-        <SlideOver open={panelOpen} onClose={closePanel} side="left" tone="dark" title="Account details">
-          <AccountPanel tone="dark" />
+        <SlideOver open={panelOpen} onClose={closePanel} side="left" tone={theme} title="Account details">
+          <AccountPanel tone={theme} />
         </SlideOver>
       )}
       <DataSourceToggle side="right" />
@@ -195,13 +220,18 @@ export default function CopilotPage() {
 
 /* ----------------------------- Ambient layers ---------------------------- */
 
+/**
+ * Both palettes share the two drifting brand washes (dialled up on dark); the
+ * dot grid and the vignette that sink the page into navy are dark-only, so they
+ * are faded out rather than conditionally rendered.
+ */
 function AmbientBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(60%_55%_at_50%_-12%,rgba(44,165,217,0.20),transparent_70%)] motion-safe:animate-aurora-drift" />
-      <div className="absolute inset-0 bg-[radial-gradient(40%_40%_at_100%_100%,rgba(227,57,53,0.08),transparent_70%)] [animation-delay:-8s] motion-safe:animate-aurora-drift" />
-      <div className="brand-dot-grid absolute inset-0 opacity-[0.35]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_45%,#0d1b2a_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_-6%,rgba(44,165,217,0.12),transparent_66%)] motion-safe:animate-aurora-drift dark:bg-[radial-gradient(60%_55%_at_50%_-12%,rgba(44,165,217,0.20),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(42%_40%_at_100%_100%,rgba(227,57,53,0.05),transparent_70%)] [animation-delay:-8s] motion-safe:animate-aurora-drift dark:bg-[radial-gradient(40%_40%_at_100%_100%,rgba(227,57,53,0.08),transparent_70%)]" />
+      <div className="brand-dot-grid absolute inset-0 opacity-0 transition-opacity dark:opacity-[0.35]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_45%,#0d1b2a_100%)] opacity-0 transition-opacity dark:opacity-100" />
     </div>
   )
 }
@@ -215,8 +245,8 @@ function Filament({ active }: { active: boolean }) {
         <span className="h-3 w-3 rounded-full bg-brand-cyan" />
         <span className="absolute inset-0 rounded-full bg-brand-cyan/40 blur-md motion-safe:animate-orb-breathe" />
       </span>
-      <div className="absolute bottom-0 left-1.5 top-8 w-px -translate-x-1/2 origin-top bg-gradient-to-b from-brand-cyan/55 via-brand-cyan/15 to-transparent motion-safe:animate-spine-draw" />
-      <div className="absolute bottom-0 left-1.5 top-8 w-[3px] -translate-x-1/2 origin-top bg-brand-cyan/25 blur-[3px] motion-safe:animate-spine-draw" />
+      <div className="absolute bottom-0 left-1.5 top-8 w-px -translate-x-1/2 origin-top bg-gradient-to-b from-brand-cyan/60 via-brand-cyan/20 to-transparent motion-safe:animate-spine-draw dark:from-brand-cyan/55 dark:via-brand-cyan/15" />
+      <div className="absolute bottom-0 left-1.5 top-8 w-[3px] -translate-x-1/2 origin-top bg-brand-cyan/20 blur-[3px] motion-safe:animate-spine-draw dark:bg-brand-cyan/25" />
       {active && (
         <div className="absolute left-1.5 top-8 h-20 w-[3px] -translate-x-1/2 bg-gradient-to-b from-transparent via-brand-cyan to-transparent blur-[1px] motion-safe:animate-filament-beam" />
       )}
@@ -231,7 +261,7 @@ function Node({ tone = "cyan" }: { tone?: "cyan" | "dim" | "emerald" }) {
       className={cn(
         "absolute left-1.5 top-1.5 h-2 w-2 -translate-x-1/2 rounded-full ring-4",
         tone === "cyan" && "bg-brand-cyan ring-brand-cyan/15",
-        tone === "dim" && "bg-slate-500 ring-white/[0.04]",
+        tone === "dim" && "bg-slate-300 ring-slate-200 dark:bg-slate-500 dark:ring-white/[0.04]",
         tone === "emerald" && "bg-emerald-400 ring-emerald-400/20"
       )}
     />
@@ -257,7 +287,7 @@ function Turn({
       return (
         <li className="relative flex flex-col items-end pl-9 motion-safe:animate-rise-in">
           <span className="mb-1 text-[10px] uppercase tracking-wider text-slate-400">You</span>
-          <div className="w-fit max-w-[75%] rounded-2xl rounded-tr-md bg-white/[0.06] px-4 py-2.5 text-[15px] leading-6 text-slate-100 ring-1 ring-white/10 backdrop-blur">
+          <div className="w-fit max-w-[75%] rounded-2xl rounded-tr-md bg-brand-cyan/[0.08] px-4 py-2.5 text-[15px] leading-6 text-brand-navy ring-1 ring-brand-cyan/15 dark:bg-white/[0.06] dark:text-slate-100 dark:ring-white/10 dark:backdrop-blur">
             <span className="sr-only">You said: </span>
             {step.text}
           </div>
@@ -267,7 +297,7 @@ function Turn({
       return (
         <li className="relative pl-9 motion-safe:animate-rise-in">
           <Node />
-          <p className="max-w-[68ch] text-[15px] leading-7 text-slate-100/90">
+          <p className="max-w-[68ch] text-[15px] leading-7 text-slate-700 dark:text-slate-100/90">
             <span className="sr-only">Assistant said: </span>
             <Lede text={step.text} />
           </p>
@@ -278,14 +308,14 @@ function Turn({
       return (
         <li className="relative pl-9 motion-safe:animate-rise-in" role="status">
           <Node tone={active ? "cyan" : "dim"} />
-          <div className="flex items-center gap-2 font-mono text-xs text-slate-400">
+          <div className="flex items-center gap-2 font-mono text-xs text-slate-500 dark:text-slate-400">
             {active ? (
               <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-brand-cyan" />
             ) : (
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-600" />
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
             )}
             {active ? (
-              <span className="animate-shimmer bg-clip-text text-transparent [background-image:linear-gradient(90deg,#64748b_0%,#64748b_40%,#f8fafc_50%,#64748b_60%,#64748b_100%)] [background-size:200%_100%]">
+              <span className="animate-shimmer bg-clip-text text-transparent [background-image:linear-gradient(90deg,#94a3b8_0%,#94a3b8_40%,#0a1e35_50%,#94a3b8_60%,#94a3b8_100%)] [background-size:200%_100%] dark:[background-image:linear-gradient(90deg,#64748b_0%,#64748b_40%,#f8fafc_50%,#64748b_60%,#64748b_100%)]">
                 {step.text}
               </span>
             ) : (
@@ -327,10 +357,10 @@ function Turn({
 /** Renders the first sentence one weight brighter as a typographic lede. */
 function Lede({ text }: { text: string }) {
   const m = text.match(/^(.*?[.?!])(\s+)([\s\S]+)$/)
-  if (!m) return <span className="font-medium text-slate-50">{text}</span>
+  if (!m) return <span className="font-medium text-brand-navy dark:text-slate-50">{text}</span>
   return (
     <>
-      <span className="font-medium text-slate-50">{m[1]}</span>
+      <span className="font-medium text-brand-navy dark:text-slate-50">{m[1]}</span>
       {m[2]}
       {m[3]}
     </>
@@ -349,22 +379,22 @@ function OtpCard({
 }) {
   const digits = entered ? [...entered] : [...OTP_DIGITS]
   return (
-    <div className="rounded-2xl bg-white/[0.04] p-4 shadow-[0_0_40px_-18px_rgba(16,185,129,0.5)] ring-1 ring-white/10 backdrop-blur-xl">
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-white/[0.04] dark:shadow-[0_0_40px_-18px_rgba(16,185,129,0.5)] dark:ring-white/10 dark:backdrop-blur-xl">
       <div className="flex items-center gap-2">
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-400/12 text-emerald-300">
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-400/12 dark:text-emerald-300">
           <ShieldCheck className="h-4 w-4" />
         </span>
-        <span className="text-[13px] font-medium text-slate-100">
+        <span className="text-[13px] font-medium text-brand-navy dark:text-slate-100">
           Identity verified · {channel === "sms" ? "SMS" : "Email"}
         </span>
       </div>
-      <p className="mt-1 text-xs text-slate-400">{text}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{text}</p>
       <div className="mt-3 grid grid-cols-6 gap-2" aria-label={`Verification code ${digits.join(" ")}`}>
         {digits.map((d, i) => (
           <span
             key={i}
             style={{ animationDelay: `${i * 90}ms` }}
-            className="grid h-11 place-items-center rounded-xl bg-white/[0.05] font-mono text-lg text-brand-cyan ring-1 ring-white/10 motion-safe:animate-digit-pop"
+            className="grid h-11 place-items-center rounded-xl bg-brand-navy/[0.04] font-mono text-lg text-brand-navy ring-1 ring-brand-cyan/10 motion-safe:animate-digit-pop dark:bg-white/[0.05] dark:text-brand-cyan dark:ring-white/10"
           >
             {d}
           </span>
@@ -378,24 +408,27 @@ function OtpCard({
 function OtpChallengeNode({
   prompt,
   onSubmit,
+  tone,
 }: {
   prompt: OtpPrompt
   onSubmit: (code: string) => void
+  /** OtpInput predates the `dark:` theming, so it needs the palette explicitly. */
+  tone: Theme
 }) {
   return (
     <li className="relative pl-9 motion-safe:animate-rise-in">
       <Node />
-      <div className="rounded-2xl bg-white/[0.04] p-4 shadow-[0_0_40px_-18px_rgba(44,165,217,0.5)] ring-1 ring-brand-cyan/25 backdrop-blur-xl">
+      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-cyan/30 dark:bg-white/[0.04] dark:shadow-[0_0_40px_-18px_rgba(44,165,217,0.5)] dark:ring-brand-cyan/25 dark:backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-cyan/12 text-brand-cyan">
             <KeyRound className="h-4 w-4" />
           </span>
-          <span className="text-[13px] font-medium text-slate-100">
+          <span className="text-[13px] font-medium text-brand-navy dark:text-slate-100">
             Verify your identity · {prompt.channel === "sms" ? "SMS" : "Email"}
           </span>
         </div>
-        <p className="mt-1 text-xs text-slate-400">{prompt.text}</p>
-        <OtpInput tone="dark" onSubmit={onSubmit} className="mt-3" />
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{prompt.text}</p>
+        <OtpInput tone={tone} onSubmit={onSubmit} className="mt-3" />
       </div>
     </li>
   )
@@ -405,13 +438,13 @@ function SummaryCard({ step, source }: { step: Extract<ChatStep, { kind: "summar
   const success = step.tone === "success"
   const Icon = success ? CheckCircle2 : ClipboardCheck
   return (
-    <div className="overflow-hidden rounded-2xl bg-white/[0.04] ring-1 ring-white/10 backdrop-blur-xl">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-white/[0.04] dark:shadow-none dark:ring-white/10 dark:backdrop-blur-xl">
       <div className={cn("h-0.5 w-full", success ? "bg-emerald-400/70" : "bg-brand-cyan/70")} />
-      <div className="flex items-center gap-2 px-4 py-3 text-[13px] font-semibold text-slate-100">
-        <Icon className={cn("h-4 w-4", success ? "text-emerald-300" : "text-brand-cyan")} />
+      <div className="flex items-center gap-2 px-4 py-3 text-[13px] font-semibold text-brand-navy dark:text-slate-100">
+        <Icon className={cn("h-4 w-4", success ? "text-emerald-500 dark:text-emerald-300" : "text-brand-cyan")} />
         {step.title}
       </div>
-      <dl className="divide-y divide-white/[0.06]">
+      <dl className="divide-y divide-slate-100 dark:divide-white/[0.06]">
         {step.rows.map(([k, v], i) => {
           const routed = /^(routed|processed)/i.test(k)
           return (
@@ -420,16 +453,16 @@ function SummaryCard({ step, source }: { step: Extract<ChatStep, { kind: "summar
               style={{ animationDelay: `${i * 60}ms` }}
               className={cn(
                 "flex items-start justify-between gap-4 px-4 py-2.5 motion-safe:animate-row-reveal",
-                routed && "bg-white/[0.02]"
+                routed && "bg-slate-50 dark:bg-white/[0.02]"
               )}
             >
-              <dt className="flex items-center gap-1.5 text-xs text-slate-400">
+              <dt className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                 {routed && (
                   <span className={cn("h-1.5 w-1.5 rounded-full", source === "C2M" ? "bg-brand-red" : "bg-brand-cyan")} />
                 )}
                 {k}
               </dt>
-              <dd className="text-right text-[13px] font-medium text-slate-100">{v}</dd>
+              <dd className="text-right text-[13px] font-medium text-brand-navy dark:text-slate-100">{v}</dd>
             </div>
           )
         })}
@@ -441,12 +474,12 @@ function SummaryCard({ step, source }: { step: Extract<ChatStep, { kind: "summar
 function DoneBand({ text }: { text: string }) {
   const { body, ref } = splitReference(text)
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-emerald-400/[0.07] px-4 py-3.5 text-[14px] text-emerald-100 shadow-[0_0_50px_-20px_rgba(16,185,129,0.6)] ring-1 ring-emerald-400/25 backdrop-blur">
-      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+    <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 px-4 py-3.5 text-[14px] text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-400/[0.07] dark:text-emerald-100 dark:shadow-[0_0_50px_-20px_rgba(16,185,129,0.6)] dark:ring-emerald-400/25 dark:backdrop-blur">
+      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-300" />
       <span>
         {body}{" "}
         {ref && (
-          <span className="ml-0.5 whitespace-nowrap rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-[12px] text-emerald-200">
+          <span className="ml-0.5 whitespace-nowrap rounded-md bg-white px-2 py-0.5 font-mono text-[12px] text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-200 dark:ring-0">
             {ref}
           </span>
         )}
@@ -463,7 +496,7 @@ function ThinkingNode({ phrases }: { phrases: string[] }) {
       <div className="flex items-center gap-2" aria-label="Assistant is working">
         <span
           key={label}
-          className="animate-shimmer bg-clip-text text-sm font-medium text-transparent [background-image:linear-gradient(90deg,#64748b_0%,#64748b_40%,#f8fafc_50%,#64748b_60%,#64748b_100%)] [background-size:200%_100%]"
+          className="animate-shimmer bg-clip-text text-sm font-medium text-transparent [background-image:linear-gradient(90deg,#94a3b8_0%,#94a3b8_40%,#0a1e35_50%,#94a3b8_60%,#94a3b8_100%)] [background-size:200%_100%] dark:[background-image:linear-gradient(90deg,#64748b_0%,#64748b_40%,#f8fafc_50%,#64748b_60%,#64748b_100%)]"
         >
           {label}
         </span>
@@ -530,8 +563,8 @@ function Composer({ engine, mode }: { engine: ReturnType<typeof useChatEngine>; 
         )
       )}
 
-      <div className="flex items-end gap-2 rounded-[28px] bg-white/[0.06] px-3 py-2.5 shadow-[0_12px_60px_-16px_rgba(44,165,217,0.4)] ring-1 ring-white/12 backdrop-blur-2xl transition focus-within:shadow-[0_12px_70px_-14px_rgba(44,165,217,0.55)] focus-within:ring-brand-cyan/40">
-        <Sparkles className="mb-2.5 ml-1 h-4 w-4 shrink-0 text-slate-500" />
+      <div className="flex items-end gap-2 rounded-[28px] bg-white px-3 py-2.5 shadow-[0_12px_40px_-20px_rgba(10,30,53,0.25)] ring-1 ring-slate-200 transition focus-within:ring-2 focus-within:ring-brand-cyan/50 dark:bg-white/[0.06] dark:shadow-[0_12px_60px_-16px_rgba(44,165,217,0.4)] dark:ring-white/[0.12] dark:backdrop-blur-2xl dark:focus-within:ring-brand-cyan/40">
+        <Sparkles className="mb-2.5 ml-1 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
         <textarea
           ref={taRef}
           rows={1}
@@ -545,18 +578,18 @@ function Composer({ engine, mode }: { engine: ReturnType<typeof useChatEngine>; 
           }}
           disabled={playing}
           placeholder={playing ? "Assistant is responding…" : "Ask ACSE AI to start service, explain a bill, report a leak…"}
-          className="max-h-[200px] min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[15px] leading-6 text-slate-100 outline-none placeholder:text-slate-500"
+          className="max-h-[200px] min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[15px] leading-6 text-brand-navy outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
         />
         <button
           onClick={onSend}
           disabled={playing || !draft.trim()}
           aria-label="Send"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-cyan text-brand-navydeep shadow-[0_0_20px_-4px_rgba(44,165,217,0.7)] outline-none transition hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-brand-navydeep disabled:opacity-30 disabled:shadow-none"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-cyan text-white shadow-[0_6px_16px_-6px_rgba(44,165,217,0.7)] outline-none transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-30 disabled:shadow-none dark:text-brand-navydeep dark:shadow-[0_0_20px_-4px_rgba(44,165,217,0.7)] dark:hover:scale-105 dark:focus-visible:ring-offset-brand-navydeep"
         >
           <Send className="h-4 w-4" />
         </button>
       </div>
-      <p className="mt-2 text-center text-[11px] text-slate-400">
+      <p className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
         Illustrative conversation · non-production data · reads/writes {meta.chatLabel}
       </p>
     </div>
@@ -579,7 +612,7 @@ function Chip({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3.5 py-2 text-[13px] font-medium text-slate-300 outline-none ring-1 ring-white/10 backdrop-blur transition hover:bg-brand-cyan/10 hover:text-white hover:ring-brand-cyan/40 focus-visible:ring-2 focus-visible:ring-brand-cyan active:scale-95 disabled:opacity-40",
+        "inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] font-medium text-slate-700 outline-none ring-1 ring-slate-200 transition hover:bg-brand-cyan/[0.06] hover:text-brand-navy hover:ring-brand-cyan/30 focus-visible:ring-2 focus-visible:ring-brand-cyan active:scale-95 disabled:opacity-40 dark:bg-white/[0.04] dark:text-slate-300 dark:ring-white/10 dark:backdrop-blur dark:hover:bg-brand-cyan/10 dark:hover:text-white dark:hover:ring-brand-cyan/40",
         className
       )}
     >
@@ -600,10 +633,10 @@ function Chip({
 function ClientBrand() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-brand-cyan to-brand-navy text-sm font-bold text-white ring-1 ring-white/10">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-brand-cyan to-brand-navy text-sm font-bold text-white shadow-sm dark:shadow-none dark:ring-1 dark:ring-white/10">
         {CLIENT_NAME.charAt(0)}
       </span>
-      <span className="text-[15px] font-semibold tracking-tight text-slate-100">
+      <span className="text-[15px] font-semibold tracking-tight text-brand-navy dark:text-slate-100">
         {CLIENT_NAME}
       </span>
     </div>
@@ -624,6 +657,24 @@ function PoweredBy() {
 
 /* ----------------------------- Header pieces ----------------------------- */
 
+/** Light/dark switch — V1 only. Shows the palette it will switch *to*. */
+function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
+  const dark = theme === "dark"
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={dark}
+      onClick={onToggle}
+      title={dark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+      className="grid h-8 w-8 place-items-center rounded-md text-slate-500 outline-none transition-colors hover:bg-slate-100 hover:text-brand-navy focus-visible:ring-2 focus-visible:ring-brand-cyan dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+    >
+      {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
+  )
+}
+
 function SourcePill({ source, system, short }: { source: string; system: string; short: string }) {
   const isLive = source === "C2M"
   return (
@@ -631,7 +682,9 @@ function SourcePill({ source, system, short }: { source: string; system: string;
       aria-label={`Assistant mode: ${system}`}
       className={cn(
         "hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 sm:inline-flex",
-        isLive ? "bg-brand-red/10 text-brand-red ring-brand-red/40" : "bg-brand-cyan/10 text-brand-cyan ring-brand-cyan/30"
+        isLive
+          ? "bg-brand-red/5 text-brand-red ring-brand-red/25 dark:bg-brand-red/10 dark:ring-brand-red/40"
+          : "bg-brand-cyan/5 text-brand-navy ring-brand-cyan/25 dark:bg-brand-cyan/10 dark:text-brand-cyan dark:ring-brand-cyan/30"
       )}
     >
       {isLive ? (
@@ -640,7 +693,7 @@ function SourcePill({ source, system, short }: { source: string; system: string;
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-red" />
         </span>
       ) : (
-        <FlaskConical className="h-3 w-3" />
+        <FlaskConical className="h-3 w-3 text-brand-cyan" />
       )}
       Mode · {short}
     </span>
